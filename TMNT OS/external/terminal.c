@@ -4,6 +4,7 @@
 #include "../fs/tmnt_fs.h"
 #include "../system/memory.h"
 #include "../system/string.h"
+#include "../drivers/sb16.h"
 
 extern uint32_t* fb;
 extern uint32_t fb_width, fb_height, fb_pitch;
@@ -346,54 +347,37 @@ static void play_raw_audio(const char* path) {
     }
     
     uint32_t sz = fs_get_file_size(path);
-    if(sz == 0 || sz > 2097152) {
+    if(sz == 0 || sz > (FS_MAX_BLOCKS * FS_BLOCK_SIZE)) {
         term_fb_print("❌ Invalid music file size\n");
         return;
     }
     
-    uint8_t* audio_data = (uint8_t*)malloc(sz);
-    if(!audio_data) {
-        term_fb_print("❌ Not enough memory for music\n");
-        return;
-    }
-    
-    fs_read_file(path, audio_data, sz);
-    
     term_fb_print("🎵 Now playing: ");
     term_fb_print(path);
-    term_fb_print("\n   Press any key to stop playback\n");
+    term_fb_print(" (");
+    char sz_str[16];
+    int_to_str(sz, sz_str);
+    term_fb_print(sz_str);
+    term_fb_print(" bytes)\n");
     
-    music_playing = 1;
+    // Stream audio directly from filesystem in 65535-byte chunks
+    uint32_t offset = 0;
+    uint8_t chunk[65536];
     
-    for(uint32_t i = 0; i < sz && music_playing; i += 1) {
-        if((i % 500) == 0) {
-            if(inb(0x64) & 0x01) {
-                inb(0x60);
-                music_playing = 0;
-                break;
-            }
-        }
+    while(offset < sz) {
+        uint32_t chunk_size = 65536;
+        if(offset + chunk_size > sz)
+            chunk_size = sz - offset;
         
-        uint8_t sample = audio_data[i];
-        uint32_t freq = 200 + (sample * 1800) / 255;
+        int bytes_read = fs_read_file_chunk(path, chunk, chunk_size, offset);
+        if(bytes_read <= 0) break;
         
-        speaker_on(freq);
-        for(volatile uint32_t d = 0; d < 60; d++) asm volatile("nop");
-        speaker_off();
-        for(volatile uint32_t d = 0; d < 30; d++) asm volatile("nop");
+        sb16_play_pcm_single(chunk, bytes_read, 8000);
+        offset += bytes_read;
     }
     
-    speaker_off();
-    free(audio_data);
-    
-    if(music_playing == 0) {
-        term_fb_print("⏹️ Playback stopped\n");
-    } else {
-        term_fb_print("✅ Playback finished!\n");
-    }
-    music_playing = 0;
+    term_fb_print("✅ Playback finished!\n");
 }
-
 void tm_shell_command(char* input) {
     if(input[0]=='t'&&input[1]=='u'&&input[2]=='r'&&input[3]=='t'&&input[4]=='l'&&input[5]=='e'&&input[6]=='\0'){
         term_fg = 0x00FF00; term_fb_print("\n🐢 TM Commands - Customize Your Shell!\n");

@@ -40,6 +40,13 @@ SECTIONS
         *(.data.*)
     } :data             /* Grouped into data header */
     
+    /* DMA buffer section - MUST be in low memory (below 16MB) for ISA DMA */
+    . = ALIGN(64K);
+    .dma_section : AT(ADDR(.dma_section))
+    {
+        *(.dma_buffer*)
+    } :data
+    
     /* Read-write uninitialized data section (stack, heap variables) */
     . = ALIGN(4K);
     .bss : AT(ADDR(.bss))
@@ -61,4 +68,8 @@ SECTIONS
     /* Align the final marker to capture the exact size cleanly */
     . = ALIGN(4K);
     _kernel_end = .;
+    
+    /* Reserve 30MB for kernel growth (music data, etc.) */
+    . = ALIGN(4K);
+    . += 30M;
 }

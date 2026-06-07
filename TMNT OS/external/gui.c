@@ -9,7 +9,7 @@ extern uint32_t fb_width, fb_height, fb_pitch;
 int gui_mode = 0;
 int mouse_x = 512, mouse_y = 384;
 int mouse_btn_left = 0, mouse_btn_old_left = 0;
-uint32_t cursor_bg[12][4];
+uint32_t cursor_bg[16][16];
 
 typedef struct { int x, y, w, h; char name[32]; } desktop_icon_t;
 static desktop_icon_t icons[32];
@@ -588,24 +588,96 @@ void gui_draw_desktop(void) {
 }
 
 void gui_save_cursor_bg(void) {
-    for(int cy = 0; cy < 12; cy++)
-        for(int cx = 0; cx < 4; cx++)
+    for(int cy = 0; cy < 16; cy++)
+        for(int cx = 0; cx < 16; cx++)
             cursor_bg[cy][cx] = fb_getpixel(mouse_x + cx, mouse_y + cy);
 }
 
 void gui_restore_cursor_bg(void) {
-    for(int cy = 0; cy < 12; cy++)
-        for(int cx = 0; cx < 4; cx++)
+    for(int cy = 0; cy < 16; cy++)
+        for(int cx = 0; cx < 16; cx++)
             fb_putpixel(mouse_x + cx, mouse_y + cy, cursor_bg[cy][cx]);
 }
 
 void gui_draw_cursor(void) {
-    for(int cy = 0; cy < 12; cy++)
-        for(int cx = 0; cx < 4; cx++)
-            fb_putpixel(mouse_x + cx, mouse_y + cy, 0xFFFFFF);
-    for(int cy = 2; cy < 10; cy++)
-        for(int cx = 1; cx < 3; cx++)
-            fb_putpixel(mouse_x + cx, mouse_y + cy, 0x000000);
+    // Turtle cursor - 16x16 pixels
+    // Shell (dark green circle)
+    for(int cy = 0; cy < 14; cy++) {
+        for(int cx = 2; cx < 14; cx++) {
+            int dx = cx - 8;
+            int dy = cy - 7;
+            if(dx*dx + dy*dy <= 36) {
+                fb_putpixel(mouse_x + cx, mouse_y + cy, 0x006600); // Dark green shell
+            }
+        }
+    }
+    
+    // Shell pattern (lighter green hexagons)
+    for(int cy = 1; cy < 13; cy++) {
+        for(int cx = 3; cx < 13; cx++) {
+            int dx = cx - 8;
+            int dy = cy - 7;
+            if(dx*dx + dy*dy <= 30 && (cx + cy) % 3 == 0) {
+                fb_putpixel(mouse_x + cx, mouse_y + cy, 0x00AA00); // Pattern
+            }
+        }
+    }
+    
+    // Shell rim (darker outline)
+    for(int cy = 0; cy < 14; cy++) {
+        for(int cx = 2; cx < 14; cx++) {
+            int dx = cx - 8;
+            int dy = cy - 7;
+            int dist = dx*dx + dy*dy;
+            if(dist >= 30 && dist <= 36) {
+                fb_putpixel(mouse_x + cx, mouse_y + cy, 0x004400); // Rim
+            }
+        }
+    }
+    
+    // Head (extends to top-left from shell)
+    fb_putpixel(mouse_x + 0, mouse_y + 6, 0x44AA44);
+    fb_putpixel(mouse_x + 1, mouse_y + 5, 0x44AA44);
+    fb_putpixel(mouse_x + 1, mouse_y + 6, 0x44AA44);
+    fb_putpixel(mouse_x + 2, mouse_y + 4, 0x44AA44);
+    fb_putpixel(mouse_x + 2, mouse_y + 5, 0x44AA44);
+    
+    // Eyes (black dots on head)
+    fb_putpixel(mouse_x + 0, mouse_y + 5, 0x000000);
+    fb_putpixel(mouse_x + 1, mouse_y + 4, 0x000000);
+    
+    // Eye highlights (white)
+    fb_putpixel(mouse_x + 0, mouse_y + 4, 0xFFFFFF);
+    
+    // Front legs (top)
+    fb_putpixel(mouse_x + 4, mouse_y + 1, 0x44AA44);
+    fb_putpixel(mouse_x + 5, mouse_y + 0, 0x44AA44);
+    fb_putpixel(mouse_x + 5, mouse_y + 1, 0x44AA44);
+    
+    // Front legs (bottom)
+    fb_putpixel(mouse_x + 4, mouse_y + 12, 0x44AA44);
+    fb_putpixel(mouse_x + 5, mouse_y + 13, 0x44AA44);
+    fb_putpixel(mouse_x + 5, mouse_y + 12, 0x44AA44);
+    
+    // Back legs (top)
+    fb_putpixel(mouse_x + 10, mouse_y + 1, 0x44AA44);
+    fb_putpixel(mouse_x + 11, mouse_y + 0, 0x44AA44);
+    fb_putpixel(mouse_x + 11, mouse_y + 1, 0x44AA44);
+    
+    // Back legs (bottom)
+    fb_putpixel(mouse_x + 10, mouse_y + 12, 0x44AA44);
+    fb_putpixel(mouse_x + 11, mouse_y + 13, 0x44AA44);
+    fb_putpixel(mouse_x + 11, mouse_y + 12, 0x44AA44);
+    
+    // Tail (bottom-right)
+    fb_putpixel(mouse_x + 13, mouse_y + 8, 0x44AA44);
+    fb_putpixel(mouse_x + 14, mouse_y + 7, 0x44AA44);
+    fb_putpixel(mouse_x + 15, mouse_y + 7, 0x44AA44);
+    fb_putpixel(mouse_x + 15, mouse_y + 8, 0x44AA44);
+    
+    // Mouth (tiny smile on head)
+    fb_putpixel(mouse_x + 0, mouse_y + 8, 0x000000);
+    fb_putpixel(mouse_x + 1, mouse_y + 9, 0x000000);
 }
 
 int gui_hit_icon(void) {

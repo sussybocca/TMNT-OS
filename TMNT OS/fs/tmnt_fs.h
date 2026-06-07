@@ -57,6 +57,7 @@ int fs_create_file(const char* path);
 int fs_create_dir(const char* path);
 int fs_write_file(const char* path, uint8_t* data, uint32_t size);
 int fs_read_file(const char* path, uint8_t* buffer, uint32_t size);
+int fs_read_file_chunk(const char* path, uint8_t* buffer, uint32_t size, uint32_t offset);
 uint32_t fs_get_file_size(const char* path);
 int fs_file_exists(const char* path);
 int fs_delete_file(const char* path);

@@ -23,16 +23,96 @@ static const char scancode_to_ascii[] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'\n'
 };
 
-  uint8_t inb(uint16_t port) { 
+uint8_t inb(uint16_t port) { 
     uint8_t r; 
     asm volatile("inb %1,%0":"=a"(r):"Nd"(port)); 
     return r; 
 }
 
-  void outb(uint16_t port, uint8_t v) { 
+void outb(uint16_t port, uint8_t v) { 
     asm volatile("outb %0,%1"::"a"(v),"Nd"(port)); 
 }
 
+// Turtle cursor drawing function
+void gui_draw_cursor(void) {
+    // Shell (dark green circle)
+    for(int cy = 0; cy < 14; cy++) {
+        for(int cx = 2; cx < 14; cx++) {
+            int dx = cx - 8;
+            int dy = cy - 7;
+            if(dx*dx + dy*dy <= 36) {
+                gui_fb_putpixel(mouse_x + cx, mouse_y + cy, 0x006600); // Dark green shell
+            }
+        }
+    }
+    
+    // Shell pattern (lighter green hexagons)
+    for(int cy = 1; cy < 13; cy++) {
+        for(int cx = 3; cx < 13; cx++) {
+            int dx = cx - 8;
+            int dy = cy - 7;
+            if(dx*dx + dy*dy <= 30 && (cx + cy) % 3 == 0) {
+                gui_fb_putpixel(mouse_x + cx, mouse_y + cy, 0x00AA00); // Pattern
+            }
+        }
+    }
+    
+    // Shell rim (darker outline)
+    for(int cy = 0; cy < 14; cy++) {
+        for(int cx = 2; cx < 14; cx++) {
+            int dx = cx - 8;
+            int dy = cy - 7;
+            int dist = dx*dx + dy*dy;
+            if(dist >= 30 && dist <= 36) {
+                gui_fb_putpixel(mouse_x + cx, mouse_y + cy, 0x004400); // Rim
+            }
+        }
+    }
+    
+    // Head (extends to top-left from shell)
+    gui_fb_putpixel(mouse_x + 0, mouse_y + 6, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 1, mouse_y + 5, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 1, mouse_y + 6, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 2, mouse_y + 4, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 2, mouse_y + 5, 0x44AA44);
+    
+    // Eyes (black dots on head)
+    gui_fb_putpixel(mouse_x + 0, mouse_y + 5, 0x000000);
+    gui_fb_putpixel(mouse_x + 1, mouse_y + 4, 0x000000);
+    
+    // Eye highlights (white)
+    gui_fb_putpixel(mouse_x + 0, mouse_y + 4, 0xFFFFFF);
+    
+    // Front legs (top)
+    gui_fb_putpixel(mouse_x + 4, mouse_y + 1, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 5, mouse_y + 0, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 5, mouse_y + 1, 0x44AA44);
+    
+    // Front legs (bottom)
+    gui_fb_putpixel(mouse_x + 4, mouse_y + 12, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 5, mouse_y + 13, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 5, mouse_y + 12, 0x44AA44);
+    
+    // Back legs (top)
+    gui_fb_putpixel(mouse_x + 10, mouse_y + 1, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 11, mouse_y + 0, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 11, mouse_y + 1, 0x44AA44);
+    
+    // Back legs (bottom)
+    gui_fb_putpixel(mouse_x + 10, mouse_y + 12, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 11, mouse_y + 13, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 11, mouse_y + 12, 0x44AA44);
+    
+    // Tail (bottom-right)
+    gui_fb_putpixel(mouse_x + 13, mouse_y + 8, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 14, mouse_y + 7, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 15, mouse_y + 7, 0x44AA44);
+    gui_fb_putpixel(mouse_x + 15, mouse_y + 8, 0x44AA44);
+    
+    // Mouth (tiny smile on head)
+    gui_fb_putpixel(mouse_x + 0, mouse_y + 8, 0x000000);
+    gui_fb_putpixel(mouse_x + 1, mouse_y + 9, 0x000000);
+}
 char keyboard_getchar_poll(void) {
     static int e0_prefix = 0;
     

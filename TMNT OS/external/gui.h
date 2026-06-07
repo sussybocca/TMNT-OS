@@ -38,5 +38,5 @@ void gui_draw_tmnt_button(int x, int y, int w, int h, const char* text, uint32_t
 extern int gui_mode;
 extern int mouse_x, mouse_y;
 extern int mouse_btn_left, mouse_btn_old_left;
-extern uint32_t cursor_bg[12][4];
+extern uint32_t cursor_bg[16][16];
 #endif

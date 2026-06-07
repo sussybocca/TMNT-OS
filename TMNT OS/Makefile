@@ -19,10 +19,15 @@ APP_DIRS := $(wildcard apps/*/)
 APP_NAMES := $(foreach dir,$(APP_DIRS),$(notdir $(patsubst %/,%,$(dir))))
 
 # Exemption list - these apps handle their own registration or UI
-EXEMPT_APPS := file_manager text_editor runner paint_studio tm_lang calculator
+EXEMPT_APPS := file_manager text_editor runner paint_studio tm_lang calculator tmnt_bot tam_parser
 # Filter out exempt apps from auto-discovery
 AUTO_APPS := $(filter-out $(EXEMPT_APPS),$(APP_NAMES))
 AUTO_OBJECTS := $(foreach app,$(AUTO_APPS),apps/$(app)/$(app).o)
+
+# ===== EMBEDDED KNOWLEDGE FILES =====
+KNOWLEDGE_DIR := system/ai/knowledge
+KNOWLEDGE_FILES := $(wildcard $(KNOWLEDGE_DIR)/*.kn)
+KNOWLEDGE_OBJECTS := $(KNOWLEDGE_FILES:.kn=.o)
 
 # All object files
 OBJECTS=boot/boot.o \
@@ -31,18 +36,24 @@ OBJECTS=boot/boot.o \
         external/gui.o \
         external/input.o \
         drivers/vga/vga.o \
+        drivers/sb16.o \
+        drivers/pit.o \
+        drivers/AI/Background/Services/tmnt_bot_svc.o \
         system/string.o \
         system/memory.o \
         fs/tmnt_fs.o \
+        $(KNOWLEDGE_OBJECTS) \
         $(AUTO_OBJECTS) \
         apps/file_manager/file_manager.o \
         apps/text_editor/text_editor.o \
         apps/tm_lang/tm_lang.o \
         apps/runner/runner.o \
-        apps/paint_studio/paint_studio.o
+        apps/paint_studio/paint_studio.o \
+        apps/tmnt_bot/tmnt_bot.o \
+        apps/tam_parser/tam_parser.o
 
 all: apps/auto_apps.c $(OUTPUT_ISO)
-	@echo "✅ Done"
+	@echo "✅ Done - Knowledge files embedded: $(notdir $(KNOWLEDGE_FILES))"
 
 # ===== AUTO-GENERATE apps/auto_apps.c =====
 apps/auto_apps.c: $(wildcard apps/*/*.c)
@@ -89,6 +100,16 @@ external/input.o: external/input.c
 drivers/vga/vga.o: drivers/vga/vga.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+drivers/sb16.o: drivers/sb16.c drivers/sb16.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+drivers/pit.o: drivers/pit.c drivers/pit.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile AI Background Service
+drivers/AI/Background/Services/tmnt_bot_svc.o: drivers/AI/Background/Services/tmnt_bot_svc.c drivers/AI/Background/Services/tmnt_bot_svc.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Compile system
 system/string.o: system/string.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -99,6 +120,11 @@ system/memory.o: system/memory.c
 # Compile filesystem
 fs/tmnt_fs.o: fs/tmnt_fs.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# ===== EMBED KNOWLEDGE FILES AS BINARY OBJECTS =====
+$(KNOWLEDGE_DIR)/%.o: $(KNOWLEDGE_DIR)/%.kn
+	@echo "  Embedding knowledge: $(notdir $<)"
+	objcopy -I binary -O elf32-i386 -B i386 --rename-section .data=.rodata,alloc,load,readonly,data,contents $< $@
 
 # Compile auto-discovered apps
 define AUTO_APP_RULE
@@ -124,6 +150,12 @@ apps/runner/runner.o: apps/runner/runner.c
 apps/paint_studio/paint_studio.o: apps/paint_studio/paint_studio.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+apps/tmnt_bot/tmnt_bot.o: apps/tmnt_bot/tmnt_bot.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+apps/tam_parser/tam_parser.o: apps/tam_parser/tam_parser.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Link
 kernel.bin: $(OBJECTS) apps/auto_apps.o
 	$(LD) $(LDFLAGS) $(OBJECTS) apps/auto_apps.o -o $@
@@ -136,7 +168,7 @@ $(OUTPUT_ISO): kernel.bin
 
 # Run in QEMU
 run: $(OUTPUT_ISO)
-	qemu-system-x86_64 -cdrom $(OUTPUT_ISO)
+	qemu-system-x86_64 -cdrom $(OUTPUT_ISO) -audiodev pa,id=sb16audio -device sb16,audiodev=sb16audio
 
 # Clean
 clean:
@@ -146,13 +178,19 @@ clean:
 	$(RM) kernel/kernel.o
 	$(RM) external/*.o
 	$(RM) drivers/vga/*.o
+	$(RM) drivers/sb16.o
+	$(RM) drivers/pit.o
+	$(RM) drivers/AI/Background/Services/*.o
 	$(RM) system/*.o
 	$(RM) fs/*.o
+	$(RM) $(KNOWLEDGE_DIR)/*.o
 	$(RM) apps/file_manager/*.o
 	$(RM) apps/text_editor/*.o
 	$(RM) apps/tm_lang/*.o
 	$(RM) apps/runner/*.o
 	$(RM) apps/paint_studio/*.o
+	$(RM) apps/tmnt_bot/*.o
+	$(RM) apps/tam_parser/*.o
 	@for app in $(AUTO_APPS); do \
 		$(RM) apps/$$app/*.o; \
 	done

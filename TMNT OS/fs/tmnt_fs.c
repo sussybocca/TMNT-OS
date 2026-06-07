@@ -3,8 +3,10 @@
 #include "../system/memory.h"
 #include "../system/string.h"
 #include "../external/music_data.h"
+#include "../external/music/delosound_hiphop_beat_old_school_boom_bap_421074.h"
+#include "../external/music/kontraa_right_back_boom_bap_music_446234.h"
 
-#define FS_MEMORY_START 0x200000
+#define FS_MEMORY_START 0x2800000
 #define FS_MEMORY_SIZE 0x6400000
 #define INODE_HASH_SIZE 64
 
@@ -284,6 +286,14 @@ void fs_init() {
     if(tmnt_theme_raw_len > 0 && tmnt_theme_raw_len < (FS_MAX_BLOCKS * FS_BLOCK_SIZE)) {
         fs_write_file("/user/music/tmnt_theme.raw", (uint8_t*)tmnt_theme_raw, tmnt_theme_raw_len);
     }
+    
+    if(delosound_hiphop_beat_old_school_boom_bap_421074_raw_len > 0 && delosound_hiphop_beat_old_school_boom_bap_421074_raw_len < (FS_MAX_BLOCKS * FS_BLOCK_SIZE)) {
+        fs_write_file("/user/music/hiphop_beat.raw", (uint8_t*)delosound_hiphop_beat_old_school_boom_bap_421074_raw, delosound_hiphop_beat_old_school_boom_bap_421074_raw_len);
+    }
+    
+    if(kontraa_right_back_boom_bap_music_446234_raw_len > 0 && kontraa_right_back_boom_bap_music_446234_raw_len < (FS_MAX_BLOCKS * FS_BLOCK_SIZE)) {
+        fs_write_file("/user/music/right_back.raw", (uint8_t*)kontraa_right_back_boom_bap_music_446234_raw, kontraa_right_back_boom_bap_music_446234_raw_len);
+    }
 }
 
 void fs_format() {
@@ -406,6 +416,41 @@ int fs_read_file(const char* path, uint8_t* buffer, uint32_t size) {
     }
     
     return read_size;
+}
+
+int fs_read_file_chunk(const char* path, uint8_t* buffer, uint32_t size, uint32_t offset) {
+    int inode_idx = find_inode(path);
+    if(inode_idx == -1) return -1;
+    
+    if(inodes[inode_idx].i_state & I_LOCKED) return -2;
+    
+    uint32_t file_size = inodes[inode_idx].size;
+    if(offset >= file_size) return 0;  // Past end of file
+    
+    uint32_t bytes_to_read = size;
+    if(offset + bytes_to_read > file_size)
+        bytes_to_read = file_size - offset;
+    
+    uint32_t block_size = FS_BLOCK_SIZE;
+    uint32_t start_block = offset / block_size;
+    uint32_t start_offset = offset % block_size;
+    uint32_t blocks_needed = (bytes_to_read + start_offset + block_size - 1) / block_size;
+    
+    uint32_t buffer_offset = 0;
+    for(uint32_t i = 0; i < blocks_needed && buffer_offset < bytes_to_read; i++) {
+        uint32_t block_index = inodes[inode_idx].first_block + start_block + i;
+        uint32_t block_addr = block_index * block_size;
+        
+        uint32_t copy_start = (i == 0) ? start_offset : 0;
+        uint32_t copy_len = block_size - copy_start;
+        if(buffer_offset + copy_len > bytes_to_read)
+            copy_len = bytes_to_read - buffer_offset;
+        
+        memcpy(&buffer[buffer_offset], &data_blocks[block_addr + copy_start], copy_len);
+        buffer_offset += copy_len;
+    }
+    
+    return (int)bytes_to_read;
 }
 
 uint32_t fs_get_file_size(const char* path) {
