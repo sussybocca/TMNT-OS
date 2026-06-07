@@ -65,5 +65,5 @@ msg_tmnt_boot db 'TMNT OS v1.0 - Cowabunga!', 0
 ; --- UNINITIALIZED DATA SECTION (STACK SETUP) ---
 section .bss
 align 4
-resb 32768                      ; Reserve 32KB for stack
+resb 31457280                  ; Reserve 30MB for stack
 stack_space:

@@ -10,4 +10,5 @@ void  mouse_init(void);
 
 extern int mouse_x, mouse_y;
 extern int mouse_btn_left, mouse_btn_old_left;
+extern int paint_mode;  // Set to 1 when paint studio is active
 #endif

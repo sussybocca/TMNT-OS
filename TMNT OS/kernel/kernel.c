@@ -8,6 +8,9 @@
 
 extern void file_manager_open(void);
 extern void text_editor_open(void);
+extern void runner_game_open(void);
+extern void paint_studio_open(void);
+
 
 typedef struct {
     uint32_t flags; uint32_t mem_lower; uint32_t mem_upper;
@@ -48,6 +51,9 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbi) {
         fb_height = mbi->framebuffer_height;
         fb_pitch  = mbi->framebuffer_pitch;
         mouse_init();
+        gui_init();
+
+       
 
         if(grub_terminal) {
             terminal_mode=1; gui_mode=0;
@@ -58,7 +64,6 @@ void kernel_main(uint32_t magic, multiboot_info_t* mbi) {
             gui_draw_desktop();
             gui_save_cursor_bg(); gui_draw_cursor();
         } else {
-            // default: GUI desktop
             gui_mode=1; terminal_mode=0;
             gui_draw_desktop();
             gui_save_cursor_bg(); gui_draw_cursor();
