@@ -100,7 +100,7 @@ static void maker_draw(int wx, int wy, int ww, int wh) {
     
     // Draw cursor
     int cl = 0, cc = 0;
-    for(int i = 0; i < cursor_line && tm_code[i]; i++) {
+    for(int i = 0; i < code_len && tm_code[i]; i++) {
         if(tm_code[i] == '\n') { cl++; cc = 0; }
         else cc++;
     }
@@ -153,6 +153,24 @@ static void maker_draw(int wx, int wy, int ww, int wh) {
         int tx = btn_x[i] + (btn_w[i] - strlen(btn_label[i]) * 8) / 2;
         int ty = btn_y[i] + (btn_h[i] - 16) / 2;
         mk_draw_text(tx, ty, btn_label[i], 0xFFFFFF, bg);
+    }
+}
+
+// ===== KEYBOARD HANDLER =====
+static void maker_key(char key) {
+    if(key == '\b') {
+        if(code_len > 0) {
+            code_len--;
+            tm_code[code_len] = '\0';
+        }
+    } else if(key == '\n') {
+        if(code_len < 4095) {
+            tm_code[code_len++] = '\n';
+            tm_code[code_len] = '\0';
+        }
+    } else if(key >= ' ' && code_len < 4095) {
+        tm_code[code_len++] = key;
+        tm_code[code_len] = '\0';
     }
 }
 
@@ -235,5 +253,5 @@ void tmnt_maker_open(void) {
     if(app_name[0] == '\0') strcpy(app_name, "MyTMNTApp");
     if(icon_name[0] == '\0') strcpy(icon_name, "MyApp");
     
-    gui_run_auto_app("🐢 TMNT App Maker", 50, 30, 750, 500, maker_draw, maker_click);
+    gui_run_auto_app("🐢 TMNT App Maker", 50, 30, 750, 500, maker_draw, maker_click, maker_key);
 }

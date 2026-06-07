@@ -20,7 +20,8 @@ void gui_run_app(int index);
 void gui_register_auto_app(const char* name, const char* icon_name, void (*open_func)(void));
 void gui_run_auto_app(const char* title, int wx, int wy, int ww, int wh,
                       void (*draw_content)(int wx, int wy, int ww, int wh),
-                      void (*handle_click)(int mx, int my));
+                      void (*handle_click)(int mx, int my),
+                      void (*handle_key)(char key));
 
 // Public drawing functions for apps
 void gui_fb_putpixel(int x, int y, uint32_t color);

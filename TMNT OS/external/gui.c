@@ -348,7 +348,8 @@ void gui_fb_draw_text(int x, int y, const char* str, uint32_t fg, uint32_t bg) {
 // ===== AUTOMATIC APP RUNNER WITH EMBEDDED INPUT CONTROLS =====
 void gui_run_auto_app(const char* title, int wx, int wy, int ww, int wh,
                       void (*draw_content)(int wx, int wy, int ww, int wh),
-                      void (*handle_click)(int mx, int my)) {
+                      void (*handle_click)(int mx, int my),
+                      void (*handle_key)(char key)) {
     
     int minimized = 0, maximized = 0;
     int dragging = 0, drag_ox = 0, drag_oy = 0;
@@ -383,7 +384,6 @@ void gui_run_auto_app(const char* title, int wx, int wy, int ww, int wh,
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,'\n'
     };
     int e0_prefix = 0;
-    char last_key = 0;
     
     while(1) {
         // Poll PS/2 port directly - NON-BLOCKING (same as ps_poll_input)
@@ -438,12 +438,12 @@ void gui_run_auto_app(const char* title, int wx, int wy, int ww, int wh,
                 
                 if(e0_prefix && sc == 0x1C) { 
                     e0_prefix = 0; 
-                    last_key = '\n';
+                    if(handle_key) { handle_key('\n'); need_redraw = 1; }
                 } else {
                     e0_prefix = 0;
                     if(sc < sizeof(scancode_to_ascii)) {
                         char c = scancode_to_ascii[sc];
-                        if(c != 0) last_key = c;
+                        if(c != 0 && handle_key) { handle_key(c); need_redraw = 1; }
                     }
                 }
             }
@@ -546,7 +546,6 @@ void gui_run_auto_app(const char* title, int wx, int wy, int ww, int wh,
         for(volatile int d = 0; d < 40000; d++) asm volatile("nop");
     }
 }
-
 static void gui_draw_icon(int x, int y, int w, int h, uint32_t bg, const char* label) {
     fb_fill_rect(x, y, w, h, bg);
     fb_draw_rect(x, y, w, h, 0x00AA00);

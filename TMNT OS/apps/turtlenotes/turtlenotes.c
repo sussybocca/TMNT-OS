@@ -45,6 +45,24 @@ static void tn_draw_text(int x, int y, const char* str, uint32_t fg, uint32_t bg
 static char notes_text[1024] = "Welcome to TurtleNotes!\nType your notes here...\n\n";
 static int cursor_pos = 0;
 
+static void turtlenotes_key(char key) {
+    if(key == '\b') {
+        if(cursor_pos > 0) {
+            cursor_pos--;
+            notes_text[cursor_pos] = ' ';
+            notes_text[cursor_pos + 1] = '\0';
+        }
+    } else if(key == '\n') {
+        if(cursor_pos < 1022) {
+            notes_text[cursor_pos++] = '\n';
+            notes_text[cursor_pos] = '\0';
+        }
+    } else if(key >= ' ' && cursor_pos < 1022) {
+        notes_text[cursor_pos++] = key;
+        notes_text[cursor_pos] = '\0';
+    }
+}
+
 static void turtlenotes_draw(int wx, int wy, int ww, int wh) {
     // Draw notepad background
     tn_fill_rect(wx + 10, wy + 30, ww - 20, wh - 50, 0x000000);
@@ -69,5 +87,5 @@ static void turtlenotes_click(int mx, int my) {
 void turtlenotes_open(void) {
     // gui_run_auto_app injects window frame, title bar, close/min/max buttons,
     // keyboard polling, mouse tracking, and dragging automatically.
-    gui_run_auto_app("🐢 TurtleNotes", 100, 80, 600, 400, turtlenotes_draw, turtlenotes_click);
+    gui_run_auto_app("🐢 TurtleNotes", 100, 80, 600, 400, turtlenotes_draw, turtlenotes_click, turtlenotes_key);
 }
